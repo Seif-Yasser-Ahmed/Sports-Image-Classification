@@ -1,0 +1,9 @@
+Pillow
+pandas
+torch
+torchvision
+matplotlib
+tqdm
+PyYAML
+importlib-resources
+torchviz

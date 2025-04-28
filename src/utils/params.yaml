@@ -1,0 +1,32 @@
+BATCH_SIZE: 32
+EPOCHS: 150
+LEARNING_RATE: 0.001
+NUM_CLASSES: 7
+BETAS:
+  - 0.5
+  - 0.999
+
+dataset_path: '../data/sidharkal-sports-image-classification/dataset'
+train_csv_path: '../data/sidharkal-sports-image-classification/dataset/train.csv'
+test_csv_path: '../data/sidharkal-sports-image-classification/dataset/test.csv'
+train_data_dir: '../data/sidharkal-sports-image-classification/dataset/train'
+test_data_dir: '../data/sidharkal-sports-image-classification/dataset/test'
+
+models_path: '../models'
+
+logs_dir: '../logs'
+
+run_names:
+  - Custom_Arch
+  - ResNet50
+  - ResNet50_pretrained
+  - AlexNet
+  - AlexNet_pretrained
+  - VGG16
+  - VGG16_pretrained
+  - VGG19
+  - VGG19_pretrained
+  - GoogLeNet
+  - GoogLeNet_pretrained
+
+

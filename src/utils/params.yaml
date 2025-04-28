@@ -17,16 +17,29 @@ models_path: '../models'
 logs_dir: '../logs'
 
 run_names:
-  - Custom_Arch
-  - ResNet50
-  - ResNet50_pretrained
-  - AlexNet
-  - AlexNet_pretrained
-  - VGG16
-  - VGG16_pretrained
-  - VGG19
-  - VGG19_pretrained
-  - GoogLeNet
-  - GoogLeNet_pretrained
+  - 'Custom_Naive_adam_0.001_None_32_crossentropy_wd0'
+  - 'Custom_Naive_adam_0.001_None_32_KLDivLoss_wd0'
+  - 'Custom_Naive_adam_0.001_None_32_svm_wd0'
 
+  - 'Custom_Naive_sgd_1_step_32_crossentropy_wd0'
+  - 'Custom_Naive_sgd_1_cosine_32_crossentropy_wd0'
 
+  - 'Custom_Naive_rmsprop_0.1_None_32_crossentropy_wd0'
+  - 'Custom_Naive_rmsprop_0.01_None_32_crossentropy_wd0'
+  - 'Custom_Naive_rmsprop_0.1_None_16_crossentropy_wd0'
+  - 'Custom_Naive_rmsprop_0.01_None_16_crossentropy_wd0'
+
+  - 'Custom_Naive_adagrad_0.01_None_32_crossentropy_wd1e-6'
+  - 'Custom_Naive_adagrad_0.01_None_32_crossentropy_wd1e-7'
+
+  - 'ResNet_Transfer_Adam_0.01_None_32_crossentropy_wd0'
+  - 'ResNet_Naive_Adam_0.01_None_32_crossentropy_wd0'
+
+  - 'AlexNet_Transfer_Adam_0.01_None_32_crossentropy_wd0'
+  - 'AlexNet_Naive_Adam_0.01_None_32_crossentropy_wd0'
+  - 'GoogLeNet_Transfer_Adam_0.01_None_32_crossentropy_wd0'
+  - 'GoogLeNet_Naive_Adam_0.01_None_32_crossentropy_wd0'
+  - 'VGG16_Transfer_Adam_0.01_None_32_crossentropy_wd0'
+  - 'VGG16_Naive_Adam_0.01_None_32_crossentropy_wd0'
+  - 'VGG19_Transfer_Adam_0.01_None_32_crossentropy_wd0'
+  - 'VGG19_Naive_Adam_0.01_None_32_crossentropy_wd0'

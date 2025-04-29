@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
+import torchvision.transforms as transforms
 
 
 class SportsDataset(Dataset):
@@ -43,3 +44,31 @@ class SportsDataset(Dataset):
         else:
             # 3) Return image tensor, label tensor
             return image
+
+
+transforms = transforms.Compose([
+
+    transforms.RandomResizedCrop(
+        224,
+        scale=(0.8, 1.0),
+        ratio=(0.75, 1.3333)
+    ),
+
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomVerticalFlip(),
+    transforms.RandomRotation(10),
+
+    transforms.ColorJitter(
+        brightness=0.2,
+        contrast=0.2,
+        saturation=0.2,
+        hue=0.1
+    ),
+    # transforms.Resize((224, 224)),  # remove if RandomResizedCrop already gives 224×224
+    transforms.ToTensor(),
+
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    ),
+])

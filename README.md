@@ -15,7 +15,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 ```
 
 ## Tensorboard
-in the notebooks dir
+in the logs dir
 ```
-python -m tensorboard.main --logdir runs --port 6006
+tensorboard --logdir=logs
 ```

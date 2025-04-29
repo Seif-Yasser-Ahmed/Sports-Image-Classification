@@ -17,12 +17,12 @@ models_path: '../models'
 logs_dir: '../logs'
 
 run_names:
-  - 'Custom_Naive_adam_0.001_None_32_crossentropy_wd0'
-  - 'Custom_Naive_adam_0.001_None_32_KLDivLoss_wd0'
+  - 'Custom_Naive_adam_0.001_None_32_crossentropy_wd0' #DONE
+  - 'Custom_Naive_adam_0.001_None_32_KLDivLoss_wd0' #DONE
   - 'Custom_Naive_adam_0.001_None_32_svm_wd0'
 
-  - 'Custom_Naive_sgd_1_step_32_crossentropy_wd0'
-  - 'Custom_Naive_sgd_1_cosine_32_crossentropy_wd0'
+  - 'Custom_Naive_sgd_0.1_step_32_crossentropy_wd0'
+  - 'Custom_Naive_sgd_0.1_cosine_32_crossentropy_wd0'
 
   - 'Custom_Naive_rmsprop_0.1_None_32_crossentropy_wd0'
   - 'Custom_Naive_rmsprop_0.01_None_32_crossentropy_wd0'

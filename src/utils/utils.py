@@ -1,3 +1,8 @@
+import torch
+import torch.nn as nn
+import matplotlib.pyplot as plt
+
+
 def calc_ouput_size(input_size, kernel_size, stride, padding):
     return (input_size - kernel_size + 2 * padding) // stride + 1
 

@@ -1,12 +1,12 @@
-from src.utils.yaml import Config
-from src.utils.dataset import transforms
-from src.utils.dataset import SportsDataset
+from utils.yaml import Config
+from utils.dataset import transforms
+from utils.dataset import SportsDataset
 from torch.utils.data import DataLoader
 import optuna
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from src.architectures.custom import CustomCNN  # Import your model architecture
+from architectures.custom import CustomCNN  # Import your model architecture
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

@@ -22,3 +22,31 @@ class Block(nn.Module):
     def forward(self, x):
         x = self.block(x)
         return self.dropout(x) if self.drop else x
+
+
+class Bottleneck(nn.Module):
+    def __init__(self, in_ch, mid_ch, exp, is_bottle, stride):
+        super().__init__()
+        self.expansion = exp
+        self.residual = nn.Sequential(
+            nn.Conv2d(in_ch, mid_ch, 1, bias=False),
+            nn.BatchNorm2d(mid_ch),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(mid_ch, mid_ch, 3, stride=stride, padding=1, bias=False),
+            nn.BatchNorm2d(mid_ch),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(mid_ch, mid_ch*exp, 1, bias=False),
+            nn.BatchNorm2d(mid_ch*exp),
+        )
+        if is_bottle or in_ch != mid_ch*exp:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_ch, mid_ch*exp, 1, stride=stride, bias=False),
+                nn.BatchNorm2d(mid_ch*exp)
+            )
+        else:
+            self.shortcut = nn.Identity()
+
+    def forward(self, x):
+        out = self.residual(x)
+        out += self.shortcut(x)
+        return F.relu(out)

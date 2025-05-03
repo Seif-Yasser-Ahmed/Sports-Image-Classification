@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 from architectures.custom import CustomCNN  # Import your model architecture
-
+from functools import partial
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 cfg = Config.load()
@@ -20,7 +20,7 @@ EPOCHS = cfg['EPOCHS']
 BETAS = cfg['BETAS']
 
 
-def objective(trial):
+def objective(trial, model_cls=CustomCNN):
     # Define the hyperparameters to search
     lr = trial.suggest_float('lr', 1e-5, 1e-1, log=True)
     optimizer_name = trial.suggest_categorical(
@@ -29,7 +29,7 @@ def objective(trial):
     weight_decay = trial.suggest_float('weight_decay', 1e-6, 1e-2, log=True)
 
     # Setup model
-    model = CustomCNN()  # your model here
+    model = model_cls()  # your model here
     model = model.to(device)
 
     # Dataloader
@@ -86,6 +86,8 @@ def objective(trial):
     return accuracy
 
 
-def run_optuna_study(objective, n_trials=30, direction='maximize'):
+def run_optuna_study(objective, n_trials=30, direction='maximize', model_to_search=CustomCNN):
+
     study = optuna.create_study(direction=direction)
-    study.optimize(objective, n_trials=n_trials)
+    study.optimize(partial(objective, model_cls=model_to_search),
+                   n_trials=n_trials)

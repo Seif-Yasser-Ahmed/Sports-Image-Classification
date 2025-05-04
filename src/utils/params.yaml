@@ -34,6 +34,11 @@ run_names:
 
   - 'ResNet_Transfer_adam_0.01_None_32_crossentropy_wd0'
   - 'ResNet_Naive_adam_0.01_None_32_crossentropy_wd0'
+  
+  - 'ResNet18_Transfer_adam_0.01_None_32_crossentropy_wd0'
+  - 'ResNet34_Transfer_adam_0.01_None_32_crossentropy_wd0'
+  - 'ResNet101_Transfer_adam_0.01_None_32_crossentropy_wd0'
+  - 'ResNet152_Transfer_adam_0.01_None_32_crossentropy_wd0'
 
   - 'AlexNet_Transfer_adam_0.01_None_32_crossentropy_wd0'
   - 'AlexNet_Naive_adam_0.01_None_32_crossentropy_wd0'
@@ -43,3 +48,4 @@ run_names:
   - 'VGG16_Naive_adam_0.01_None_32_crossentropy_wd0'
   - 'VGG19_Transfer_adam_0.01_None_32_crossentropy_wd0'
   - 'VGG19_Naive_adam_0.01_None_32_crossentropy_wd0'
+

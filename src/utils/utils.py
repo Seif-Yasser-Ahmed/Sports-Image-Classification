@@ -7,10 +7,53 @@ from sklearn.metrics import confusion_matrix
 import random
 import os
 import torch.nn.functional as F
+from utils.dataset import SportsDataset
+from torch.utils.data import DataLoader
+
+from torchvision import transforms
+
+transforms = transforms.Compose([
+
+    transforms.RandomResizedCrop(
+        224,
+        scale=(0.8, 1.0),
+        ratio=(0.75, 1.3333)
+    ),
+
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomVerticalFlip(),
+    transforms.RandomRotation(10),
+
+    transforms.ColorJitter(
+        brightness=0.2,
+        contrast=0.2,
+        saturation=0.2,
+        hue=0.1
+    ),
+    # transforms.Resize((224, 224)),  # remove if RandomResizedCrop already gives 224×224
+    transforms.ToTensor(),
+
+    transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    ),
+])
 
 
 def calc_ouput_size(input_size, kernel_size, stride, padding):
     return (input_size - kernel_size + 2 * padding) // stride + 1
+
+
+def initialize_data_loaders(train_csv_path, test_csv_path, dataset_path, transforms, batch_size=32):
+    train_dataset = SportsDataset(
+        csv_file=train_csv_path, file_path=dataset_path, split='train', transform=transforms)
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True)
+    test_dataset = SportsDataset(
+        csv_file=test_csv_path, file_path=dataset_path, split='test', transform=transforms)
+
+    val_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    return train_loader, val_loader
 
 
 def show_tensor_images(image_tensor):
@@ -37,8 +80,11 @@ def evaluate_model_with_confusion(model, data_loader, device):
     model.eval()
     all_preds = []
     all_labels = []
+    print("Evaluating model...")
+    # print(data_loader)
     with torch.no_grad():
         for images, labels in data_loader:
+            # print(images.shape)
             images = images.to(device)
             outputs = model(images)
             _, preds = torch.max(outputs, 1)
@@ -96,7 +142,7 @@ def compute_gradcam(model, input_tensor, target_layer, target_class=None):
     return cam, fmap, target_class
 
 
-def plot_gradcam_for_all_conv_layers(model, input_tensor, orig_img, actual_label, device):
+def plot_gradcam_for_all_conv_layers(model, input_tensor, _orig_img, actual_label, _device):
     # Mapping dictionary for classes
     label_map = {0: 'Badminton', 1: 'Cricket', 2: 'Karate',
                     3: 'Soccer', 4: 'Swimming', 5: 'Tennis', 6: 'Wrestling'}
@@ -129,6 +175,7 @@ def plot_gradcam_for_all_conv_layers(model, input_tensor, orig_img, actual_label
 
         # Average the feature map across channels for visualization
         fmap_avg = fmap.mean(dim=1, keepdim=True).squeeze().cpu().numpy()
+        fmap_avg = np.atleast_2d(fmap_avg)
         fmap_avg = (fmap_avg - fmap_avg.min()) / \
             (fmap_avg.max() - fmap_avg.min() + 1e-8)
 
@@ -169,7 +216,7 @@ def load_trained_model(model, model_path, device='cuda'):
         state_dict = checkpoint['model_state_dict']
     else:
         state_dict = checkpoint
-    model.load_state_dict(state_dict)
+    model.load_state_dict(state_dict=state_dict)
     model.to(device)
     print("Pretrained weights loaded into ResNet34 successfully.")
     return model

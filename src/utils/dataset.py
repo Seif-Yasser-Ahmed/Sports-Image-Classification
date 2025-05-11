@@ -10,17 +10,18 @@ class SportsDataset(Dataset):
     def __init__(self, csv_file, file_path, split='train', transform=None):
 
         self.data_info = pd.read_csv(csv_file)
-        self.root_dir = os.path.join(file_path, split)
+        # self.root_dir = os.path.join(file_path, split)
+        self.root_dir = os.path.join(file_path, 'train')
         self.transform = transform
         self.split = split
         # Build string → index mapping from all labels in this split
-        if split == 'train':
-            # assuming 2nd column is the label
-            label_column = self.data_info.iloc[:, 1]
-            classes = sorted(label_column.unique())
-            self.class_to_idx = {cls_name: idx for idx,
-                                 cls_name in enumerate(classes)}
-            print(f"Classes: {self.class_to_idx}")
+        # if split == 'train':
+        # assuming 2nd column is the label
+        label_column = self.data_info.iloc[:, 1]
+        classes = sorted(label_column.unique())
+        self.class_to_idx = {cls_name: idx for idx,
+                             cls_name in enumerate(classes)}
+        print(f"Classes: {self.class_to_idx}")
 
     def __len__(self):
         return len(self.data_info)
@@ -34,41 +35,13 @@ class SportsDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        if self.split == 'train':
-            # 3) String label → integer index
-            label_str = self.data_info.iloc[idx, 1]
-            label_idx = self.class_to_idx[label_str]
+        # if self.split=='train':
+        # 3) String label → integer index
+        label_str = self.data_info.iloc[idx, 1]
+        label_idx = self.class_to_idx[label_str]
 
-            # 4) Return image tensor, label tensor
-            return image, torch.tensor(label_idx, dtype=torch.int8)
-        else:
-            # 3) Return image tensor, label tensor
-            return image
-
-
-transforms = transforms.Compose([
-
-    transforms.RandomResizedCrop(
-        224,
-        scale=(0.8, 1.0),
-        ratio=(0.75, 1.3333)
-    ),
-
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomVerticalFlip(),
-    transforms.RandomRotation(10),
-
-    transforms.ColorJitter(
-        brightness=0.2,
-        contrast=0.2,
-        saturation=0.2,
-        hue=0.1
-    ),
-    # transforms.Resize((224, 224)),  # remove if RandomResizedCrop already gives 224×224
-    transforms.ToTensor(),
-
-    transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
-    ),
-])
+        # 4) Return image tensor, label tensor
+        return image, torch.tensor(label_idx, dtype=torch.int8)
+        # else:
+        #     # 3) Return image tensor, label tensor
+        #     return image

@@ -1,240 +1,196 @@
-import argparse
 import os
+import random
 import sys
+import argparse
 import torch
 import importlib
+import torch.nn as nn
 from PIL import Image
-from torchvision import transforms
-
+# from torchvision import transforms
+import numpy as np
+import torch.nn.functional as F
+from utils.custom import CustomCNN
+from utils.utils import compute_gradcam, plot_gradcam_for_all_conv_layers, load_trained_model, initialize_data_loaders, evaluate_model_with_confusion, transforms
+from utils.dataset import SportsDataset
 # Define default paths relative to the script location
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CHECKPOINT_DIR = os.path.abspath(
-    os.path.join(SCRIPT_DIR, '..', 'models', 'checkpoints')
-)
-
-# Mapping from model argument name to class names
+    os.path.join(SCRIPT_DIR, '..', 'models', 'checkpoints'))
+# C:\Users\Seif Yasser\Desktop\DL\Project\Sports-Image-Classification\data\sidharkal-sports-image-classification\dataset\train
+DATASET_PATH = '../data/sidharkal-sports-image-classification/dataset'
+TEST_CSV_PATH = '../data/sidharkal-sports-image-classification/dataset/test.csv'
+TRAIN_CSV_PATH = '../data/sidharkal-sports-image-classification/dataset/train.csv'
+# Mapping from model key to class names
 CLASS_MAP = {
     'custom': 'CustomCNN',
     'alex': 'AlexNet',
     'resnet18': 'ResNet18',
+    'resnet34': 'ResNet34',
     'resnet50': 'ResNet50',
+    'resnet101': 'ResNet101',
+    'resnet152': 'ResNet152',
     'googlenet': 'GoogLeNet',
     'vgg16': 'VGG16',
     'vgg19': 'VGG19',
 }
 
 
-def load_model(model_name, checkpoint_path, device='cpu'):
-    """
-    Dynamically imports the model class and loads the checkpoint.
+def perform_gradcam(model, train_csv_path, dataset_path, device):
+    train_dataset = SportsDataset(
+        csv_file=train_csv_path, file_path=dataset_path, split='train', transform=transforms)
+    train_idx = random.randint(0, len(train_dataset) - 1)
+    train_img, train_label = train_dataset[train_idx]
+    # input tensor must have batch dim
+    input_tensor = train_img.unsqueeze(0).to(device)
+    # Convert tensor image (C, H, W) to numpy (H, W, C) for display and clip to [0, 1]
+    orig_train_img = np.transpose(train_img.cpu().numpy(), (1, 2, 0))
+    orig_train_img = np.clip(orig_train_img, 0, 1)
 
-    Args:
-        model_name (str): Name of the model architecture to load.
-        checkpoint_path (str): Full path to the model checkpoint file.
-        device (str): Device to load the model onto ('cpu', 'cuda').
+    print("GradCAM for each conv layer on a random Train image:")
 
-    Returns:
-        model: The loaded PyTorch model. None if loading fails.
-    """
-    print(f"Attempting to load model '{model_name}' from: {checkpoint_path}")
-    if not os.path.exists(checkpoint_path):
-        print(
-            f"Error: Checkpoint file not found at {checkpoint_path}", file=sys.stderr)
-        return None
-
-    try:
-        # Dynamically import the architecture module
-        module = importlib.import_module(f"architectures.{model_name}")
-        class_name = CLASS_MAP.get(model_name)
-        if class_name is None:
-            print(
-                f"Error: No class mapping found for model '{model_name}'", file=sys.stderr)
-            return None
-        ModelClass = getattr(module, class_name)
-        model = ModelClass()
-
-        # Load checkpoint
-        state = torch.load(checkpoint_path)
-        model.load_state_dict(state['model_state_dict'])
-        model.to(device)
-        model.eval()
-        print(f"Model '{model_name}' loaded successfully onto {device}.")
-        return model
-
-    except Exception as e:
-        print(f"Error loading model {model_name}: {e}", file=sys.stderr)
-        return None
-
-
-def preprocess_input(input_path):
-    try:
-        img = Image.open(input_path).convert("RGB")
-    except Exception as e:
-        print(f"Error reading image: {e}", file=sys.stderr)
-        return None
-
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-    ])
-
-    tensor = transform(img)
-    tensor = tensor.unsqueeze(0)  # add batch dimension
-    return tensor
-    # pass
-
-
-def perform_inference(model, input_data, device):
-    with torch.no_grad():
-        # Ensure the input data is on the correct device
-        input_tensor = input_data.to(device) if hasattr(
-            input_data, "to") else input_data
-        # Run the inference
-        output = model(input_tensor)
-    return output
-    # pass
-
-
-def postprocess_output(model, image_tensor, target_layers=None, target_class=None):
-    from utils.grad_cam import run_grad_cam
-
-    print(
-        f"\033[32mRunning Grad-CAM on model: {model.__class__.__name__}\033[0m")
-    print(f"Target class: {target_class}")
-    run_grad_cam(model, image_tensor.to('cuda'), target_class=target_class,
-                 target_layers=target_layers)
-    # pass
+    plot_gradcam_for_all_conv_layers(
+        model, input_tensor, orig_train_img, train_label, device)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run inference using a trained model.",
+        description="Run inference using a pretrained model from a run name.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        '--model_name',
+        "run_name",
         type=str,
-        choices=list(CLASS_MAP.keys()),
-        default='custom',
-        help='Model architecture to use.'
+        help="The run name of the trained model (e.g. modelCustom_Naive_adam_0.01_None_32_crossentropy_wd0_epoch_100)."
     )
-    parser.add_argument(
-        '--training_method',
-        type=str,
-        choices=['naive', 'transfer'],
-        default='naive',
-        help='Training method used.'
-    )
-    parser.add_argument(
-        '--optimizer',
-        type=str,
-        choices=['adam', 'SGD', 'RMSProp'],
-        default='adam',
-        help='Optimizer used during training.'
-    )
-    parser.add_argument(
-        '--lr',
-        type=float,
-        choices=[0.01, 0.001],
-        default=0.01,
-        help='Learning rate used during training.'
-    )
-    parser.add_argument(
-        '--scheduler',
-        type=str,
-        choices=['None', 'step', 'cosine'],
-        default='None',
-        help='LR scheduler used during training.'
-    )
-    parser.add_argument(
-        '--batch_size',
-        type=int,
-        choices=[16, 32, 64],
-        default=32,
-        help='Batch size used during training.'
-    )
-    parser.add_argument(
-        '--loss_fn',
-        type=str,
-        default='crossentropy',
-        help='Loss function used during training.'
-    )
-    parser.add_argument(
-        '--weight_decay',
-        type=float,
-        default=0.0,
-        help='Weight decay used during training.'
-    )
-    parser.add_argument(
-        '--input_path',
-        type=str,
-        required=True,
-        help='Path to the input data (e.g., image file, text file, csv).'
-    )
-    parser.add_argument(
-        '--device',
-        type=str,
-        default='cpu',
-        choices=['cpu', 'cuda', 'gpu'],
-        help='Device to run inference on (cpu or cuda/gpu).'
-    )
-
     args = parser.parse_args()
 
-    # Build composite checkpoint name string
-    string = "seif"
-    # string.capitalize()
-    if args.weight_decay == 0.0:
-        args.weight_decay = '0'
-    composite_name = f"model{str(args.model_name).capitalize()}_{str(args.training_method).capitalize()}_{str(args.optimizer)}_{str(args.lr).capitalize()}_{str(args.scheduler).capitalize()}_{args.batch_size}_{args.loss_fn}_wd{args.weight_decay}_epoch_100"
-
-    # Search for checkpoint file
-    checkpoint_filename = composite_name + '.pth'
+    run_name = args.run_name
+    print("--- Loading Checkpoint ---")
+    if run_name.startswith("Custom"):
+        checkpoint_filename = 'model' + run_name + '_epoch_100.pth'
+    else:
+        checkpoint_filename = 'model' + run_name + '_epoch_7.pth'
     checkpoint_path = os.path.join(DEFAULT_CHECKPOINT_DIR, checkpoint_filename)
     if not os.path.isfile(checkpoint_path):
         print(
             f"Error: Checkpoint '{checkpoint_filename}' not found in {DEFAULT_CHECKPOINT_DIR}", file=sys.stderr)
         sys.exit(1)
 
-    # Resolve device alias
-    device = 'cuda' if args.device in ['cuda', 'gpu'] else 'cpu'
-    if device == 'cuda' and not torch.cuda.is_available():
-        print("Warning: CUDA not available. Falling back to CPU.", file=sys.stderr)
-        device = 'cpu'
+    # print("--- Loading Checkpoint ---")
+    # Extract model key from run_name
+    # if not run_name.startswith("model"):
+    #     print("Error: Run name does not start with 'model'", file=sys.stderr)
+    #     sys.exit(1)
 
-    print(f"--- Inference Configurations ---")
-    print(f"Model: {args.model_name}")
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print("--- Inference Configurations ---")
+    print(f"Model Name: {run_name}")
     print(f"Checkpoint: {checkpoint_path}")
     print(f"Device: {device}")
-    print(f"Input Path: {args.input_path}")
     print("-----------------------------------")
 
-    # Run inference pipeline
-    model = load_model(args.model_name, checkpoint_path, device)
+    class_model = run_name.split('_')[0]
+    # model = CLASS_MAP.get(model_key)
+
+    print("--- Loading Model ---")
+    # Use a hard-coded input image path (modify as needed)
+    from utils.custom import CustomCNN
+    if class_model == 'Custom':
+        class_model = CustomCNN
+        class_model = class_model(num_classes=7)
+
+    elif class_model == 'ResNet':
+        from torchvision.models import resnet50
+        class_model = resnet50
+
+    elif class_model == 'AlexNet':
+        from torchvision.models import alexnet
+        class_model = alexnet
+
+    elif class_model == 'VGG16':
+        from torchvision.models import vgg16
+        class_model = vgg16
+
+    elif class_model == 'VGG19':
+        from torchvision.models import vgg19
+        class_model = vgg19
+
+    elif class_model == 'GoogLeNet':
+        from torchvision.models import googlenet
+        class_model = googlenet
+
+    elif class_model == 'ResNet18':
+        from torchvision.models import resnet18
+        class_model = resnet18
+
+    elif class_model == 'ResNet34':
+        from torchvision.models import resnet34
+        class_model = resnet34
+
+    elif class_model == 'ResNet101':
+        from torchvision.models import resnet101
+        class_model = resnet101
+
+    elif class_model == 'ResNet152':
+        from torchvision.models import resnet152
+        class_model = resnet152
+
+    else:
+        # Dynamically import the model class from the module
+        try:
+            module = importlib.import_module(
+                f"models.{class_model.lower()}")
+            class_model = getattr(module, CLASS_MAP[class_model])
+        except ImportError as e:
+            print(f"Error importing model: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    if not isinstance(class_model, CustomCNN):
+        if class_model.__name__ == 'alexnet':
+            class_model = class_model(pretrained=False)
+            in_features = model.classifier[-1].in_features
+            class_model.classifier[-1] = nn.Linear(in_features, 7)
+        elif 'resnet' in class_model.__name__.lower():
+            class_model = class_model(pretrained=False)
+            in_features = class_model.fc.in_features
+            class_model.fc = nn.Linear(in_features, 7)
+        else:
+            class_model = class_model(pretrained=False)
+            in_features = model.classifier[-1].in_features
+            class_model.classifier[-1] = nn.Linear(in_features, 7)
+
+    model = load_trained_model(class_model, checkpoint_path, device)
     if model is None:
         sys.exit(1)
+    print("--- Model Loaded Successfully ---")
 
-    input_data = preprocess_input(args.input_path)
-    if input_data is None:
-        sys.exit(1)
+    print("-----------------------------------")
 
-    if args.model_name == 'custom':
-        target_layers = [
-            model.conv1,
-            model.conv2,
-            model.conv3,
+    # default_input = os.path.join(SCRIPT_DIR, "sample.jpg")
+    print("--- Test Set Evaluation ---")
+    # (val_loader was created previously in initialize_all; if not, we recreate it)
+    _, test_loader = initialize_data_loaders(
+        TRAIN_CSV_PATH, TEST_CSV_PATH, DATASET_PATH, transforms, batch_size=32)
+    # train_loader, val_loader = initialize_data_loaders(train_csv_path, test_csv_path, dataset_path, transforms,batch_size=batch_size)
+    # print(test_loader)
+    test_acc, test_cm = evaluate_model_with_confusion(
+        model, test_loader, device)
 
-            model.conv4
-        ]
-    output = perform_inference(model, input_data, device)
-    if output is None:
-        sys.exit(1)
+    train_dataset = SportsDataset(
+        csv_file=TRAIN_CSV_PATH, file_path=DATASET_PATH, split='train', transform=transforms)
+    train_idx = random.randint(0, len(train_dataset) - 1)
+    train_img, train_label = train_dataset[train_idx]
+    # input tensor must have batch dim
+    input_tensor = train_img.unsqueeze(0).to(device)
+    # Convert tensor image (C, H, W) to numpy (H, W, C) for display and clip to [0, 1]
+    orig_train_img = np.transpose(train_img.cpu().numpy(), (1, 2, 0))
+    orig_train_img = np.clip(orig_train_img, 0, 1)
 
-    results = postprocess_output(
-        model, input_data, target_layers=target_layers)
-
+    print("--- Saving GradCAM for each conv layer on a random Train image ---")
+    perform_gradcam(model, train_csv_path=TRAIN_CSV_PATH,
+                    dataset_path=DATASET_PATH, device=device)
     print("--- Inference Results ---")
-    print(results)
+    # print(output)
 
 
 if __name__ == "__main__":

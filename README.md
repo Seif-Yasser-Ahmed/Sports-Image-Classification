@@ -85,6 +85,7 @@ data/
 │   └── Confusion Matrix/ # For the last ran model
 ├── requirements.txt      # Python dependencies
 ├── LICENSE               # MIT License
+├── USER_MANUAL.md      # This user manual
 └── README.md             # Project overview and instructions
 ```
 

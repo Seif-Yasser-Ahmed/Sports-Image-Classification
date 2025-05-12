@@ -99,7 +99,7 @@ def main():
         class_model = CustomCNN
         class_model = class_model(num_classes=7)
 
-    elif class_model == 'ResNet':
+    elif class_model == 'ResNet50':
         from torchvision.models import resnet50
         class_model = resnet50
 
@@ -148,15 +148,19 @@ def main():
     if not isinstance(class_model, CustomCNN):
         if class_model.__name__ == 'alexnet':
             class_model = class_model(pretrained=False)
-            in_features = model.classifier[-1].in_features
+            in_features = class_model.classifier[-1].in_features
             class_model.classifier[-1] = nn.Linear(in_features, 7)
         elif 'resnet' in class_model.__name__.lower():
             class_model = class_model(pretrained=False)
             in_features = class_model.fc.in_features
             class_model.fc = nn.Linear(in_features, 7)
+        elif class_model.__name__ == 'googlenet':
+            class_model = class_model(pretrained=False)
+            in_features = class_model.fc.in_features
+            class_model.fc = nn.Linear(in_features, 7)
         else:
             class_model = class_model(pretrained=False)
-            in_features = model.classifier[-1].in_features
+            in_features = class_model.classifier[-1].in_features
             class_model.classifier[-1] = nn.Linear(in_features, 7)
 
     model = load_trained_model(class_model, checkpoint_path, device)
@@ -187,8 +191,8 @@ def main():
     orig_train_img = np.clip(orig_train_img, 0, 1)
 
     print("--- Saving GradCAM for each conv layer on a random Train image ---")
-    perform_gradcam(model, train_csv_path=TRAIN_CSV_PATH,
-                    dataset_path=DATASET_PATH, device=device)
+    perform_gradcam(model.to('cpu'), train_csv_path=TRAIN_CSV_PATH,
+                    dataset_path=DATASET_PATH, device='cpu')
     print("--- Inference Results ---")
     # print(output)
 

@@ -11,6 +11,7 @@ from utils.dataset import SportsDataset
 from torch.utils.data import DataLoader
 
 from torchvision import transforms
+import shutil
 
 transforms = transforms.Compose([
 
@@ -162,6 +163,8 @@ def plot_gradcam_for_all_conv_layers(model, input_tensor, _orig_img, actual_labe
     inp = np.clip(inp, 0, 1)
 
     # Create directory to save gradcam images
+    if os.path.exists('gradcam'):
+        shutil.rmtree('gradcam')
     os.makedirs('gradcam', exist_ok=True)
 
     # For each conv layer, compute gradcam and plot original image, overlay, and averaged feature map
@@ -216,7 +219,8 @@ def load_trained_model(model, model_path, device='cuda'):
         state_dict = checkpoint['model_state_dict']
     else:
         state_dict = checkpoint
-    model.load_state_dict(state_dict=state_dict)
+
+    model.load_state_dict(state_dict=state_dict, strict=False)
     model.to(device)
     print("Pretrained weights loaded into ResNet34 successfully.")
     return model

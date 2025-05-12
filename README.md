@@ -92,17 +92,15 @@ data/
 
 1. **Clone the repository**
 
-   ```bash
-   ```
-
+```bash
 git clone [https://github.com/Seif-Yasser-Ahmed/Sports-Image-Classification.git](https://github.com/Seif-Yasser-Ahmed/Sports-Image-Classification.git)
 cd Sports-Image-Classification
+```
 
-````
 
 2. **Install dependencies**
 
-   ```bash
+```bash
 pip install -r requirements.txt
 ````
 
@@ -135,8 +133,8 @@ The `models/` directory contains pretrained checkpoints. Download the latest che
 
 
 ### Tensorboard
-in the logs dir
-```
+in the root dir
+```bash
 tensorboard --logdir=logs
 ```
 
